@@ -1,0 +1,7 @@
+/.vs/
+*/Debug/*
+/Debug/
+*/x64/*
+*/test-roms/
+*.vcxproj
+*.vcxproj.*
