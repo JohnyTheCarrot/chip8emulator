@@ -17,10 +17,7 @@ void read_rom_from_file(const char* path)
 
 void clear_screen()
 {
-	for (size_t i = 0; i < 32; i++)
-    {
-        screen_buffer[i] = 0;
-    }
+	memset(screen_buffer, 0, 32 * sizeof(uint64_t));
 }
 
 void jump(short address)
@@ -68,6 +65,12 @@ void skip_reg_eq(uint8_t x, uint8_t y)
 		program_counter += 2;
 }
 
+void skip_reg_neq(uint8_t x, uint8_t y)
+{
+	if (registers[x] != registers[y])
+		program_counter += 2;
+}
+
 void set_register(uint8_t reg, uint8_t value)
 {
 	registers[reg] = value;
@@ -100,7 +103,7 @@ void logical_xor(uint8_t x, uint8_t y)
 
 void add_with_carry(uint8_t x, uint8_t y)
 {
-	bool will_overflow = registers[x] + registers[y] > 0xFF;
+	const bool will_overflow = registers[x] + registers[y] > 0xFF;
 	registers[x] += registers[y];
 	registers[0xF] = will_overflow;
 }
@@ -133,33 +136,57 @@ void set_delay_timer(uint8_t reg)
 	delay_timer = registers[reg];
 }
 
+void decToBinary(int n)
+{
+	// array to store binary number 
+	int binaryNum[32];
+
+	// counter for binary array 
+	int i = 0;
+	while (n > 0) {
+
+		// storing remainder in binary array 
+		binaryNum[i] = n % 2;
+		n = n / 2;
+		i++;
+	}
+
+	// printing binary array in reverse order 
+	for (int j = i - 1; j >= 0; j--)
+		std::cout << binaryNum[j];
+	std::cout << std::endl;
+}
+
 void get_key(uint8_t reg)
 {
+	// check if any keys are down,
+	// if not, we block by cancelling out any program_counter progression
+	// !keys works because 'keys' is a uint16_t, which will be false if
+	// all bits are not set. Bits on 'keys' are keys that are down
 	if (!keys)
 		program_counter -= 2;
 	else
 	{
-		for (size_t i = 0; i < sizeof(keys); i++)
-		{
-			if ((keys >> (sizeof(keys) - i)) & 1U)
+		decToBinary(keys);
+		for (size_t i = (sizeof(uint16_t) * 8); i > 0; i--)
+			if ((keys >> i) & 1U)
 			{
-				registers[reg] = i;
-				return;
+				//std::cout << (int)i << std::hex << abs(16 - (int)i - 1) << std::endl;
+				registers[reg] = abs(16 - (int)i - 1);
 			}
-		}
 	}
 }
 
 void skip_if_key(uint8_t reg)
 {
-	bool key = (keys >> registers[reg]) & 1U;
+	const bool key = (keys >> registers[reg]) & 1U;
 	if (key)
 		program_counter += 2;
 }
 
 void skip_if_not_key(uint8_t reg)
 {
-	bool key = (keys >> registers[reg]) & 1U;
+	const bool key = (keys >> registers[reg]) & 1U;
 	if (!key)
 		program_counter += 2;
 }
@@ -182,20 +209,33 @@ void ram_to_registers(uint8_t n)
 		registers[0] = random_access_memory[data_address];
 		return;
 	}
+
+	// copy n RAM bytes from ram into registers v0 -> vX
 	memcpy(&registers, &random_access_memory[data_address], n);
 }
 
 void font(uint8_t reg)
 {
+	// data_address is set to 5 times the register value
+	// because 5 is the width in bytes of a font sprite
 	data_address = 5 * registers[reg];
 }
 
 void binary_coded_decimal_conversion(uint8_t reg)
 {
-	uint8_t value = registers[reg];
+	// here we load the digits of the value at the specified register
+	// into ram starting at data_address.
+	const uint8_t value = registers[reg];
 	random_access_memory[data_address] = (uint8_t) floor(value % 10);
 	random_access_memory[data_address + 1] = (uint8_t)floor((value / 10) % 10);
 	random_access_memory[data_address + 2] = (uint8_t)floor((value / 100) % 10);
+}
+
+void rng(uint8_t x, uint8_t nn)
+{
+	srand(time(0));
+	uint8_t random_number = (rand() % (0xFF - 1)) + 1;
+	registers[x] = random_number & nn;
 }
 
 void draw(uint8_t x_address, uint8_t y_address, uint8_t n_lines) {
@@ -301,8 +341,14 @@ void handle_instruction(uint32_t instruction)
 			break;
 		}
 		break;
+	case 9:
+		skip_reg_neq(vX_addr, vY_addr);
+		break;
 	case 0xA:
 		set_data_address(NNN);
+		break;
+	case 0xC:
+		rng(vX_addr, NN);
 		break;
 	case 0xD:
 		draw(vX_addr, vY_addr, N);
@@ -354,4 +400,5 @@ void handle_instruction(uint32_t instruction)
 		std::cout << std::hex << program_counter << " : " << (uint32_t)instruction << " <" << std::endl;
 		break;
 	}
+	//std::cout << std::hex << program_counter << " : " << (uint32_t)instruction << std::endl;
 }

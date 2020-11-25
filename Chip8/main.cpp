@@ -18,7 +18,7 @@ void start();
 
 int main(int argc, char* args[])
 {
-    read_rom_from_file("./test-roms/Space Invaders [David Winter].ch8");
+    read_rom_from_file("./test-roms/droops_keypad_test.ch8");
     start();
     
     return 0;
@@ -63,6 +63,8 @@ void start()
             //std::cout << (int)(i * 64 + j) << std::endl;
         }
     }
+
+    render();
 
     // emulator loop
     while (!close)

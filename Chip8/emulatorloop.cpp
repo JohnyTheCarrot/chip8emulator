@@ -3,54 +3,69 @@
 #include "emulator.h"
 #include <iostream>
 
-void set_key(uint8_t chip8_key_code, bool state)
+void set_key(uint16_t chip8_key_code, uint16_t state)
 {
-	keys ^= (-state ^ keys) & (1UL << chip8_key_code);
+	keys ^=
+		(-state ^ keys)
+		&
+		(1U << ((sizeof(keys) * 8 - 1) - chip8_key_code));
 }
 
 void handle_key(SDL_Scancode scancode, bool down)
 {
 	switch (scancode)
 	{
-	case SDL_SCANCODE_Q:
+	case SDL_SCANCODE_1:
 		set_key(0, down);
 		break;
-	case SDL_SCANCODE_W:
+	case SDL_SCANCODE_2:
 		set_key(1, down);
 		break;
-	case SDL_SCANCODE_E:
+	case SDL_SCANCODE_3:
 		set_key(2, down);
 		break;
-	case SDL_SCANCODE_R:
+	case SDL_SCANCODE_4:
 		set_key(3, down);
 		break;
-	case SDL_SCANCODE_A:
+	case SDL_SCANCODE_Q:
 		set_key(4, down);
 		break;
-	case SDL_SCANCODE_S:
+	case SDL_SCANCODE_W:
 		set_key(5, down);
 		break;
-	case SDL_SCANCODE_D:
+	case SDL_SCANCODE_E:
 		set_key(6, down);
 		break;
-	case SDL_SCANCODE_F:
+	case SDL_SCANCODE_R:
 		set_key(7, down);
 		break;
-	case SDL_SCANCODE_Z:
+	case SDL_SCANCODE_A:
 		set_key(8, down);
 		break;
-	case SDL_SCANCODE_X:
+	case SDL_SCANCODE_S:
 		set_key(9, down);
 		break;
-	case SDL_SCANCODE_C:
+	case SDL_SCANCODE_D:
 		set_key(10, down);
 		break;
-	case SDL_SCANCODE_V:
+	case SDL_SCANCODE_F:
 		set_key(11, down);
 		break;
+	case SDL_SCANCODE_Z:
+		set_key(12, down);
+		break;
+	case SDL_SCANCODE_X:
+		set_key(13, down);
+		break;
+	case SDL_SCANCODE_C:
+		set_key(14, down);
+		break;
+	case SDL_SCANCODE_V:
+		set_key(15, down);
+		break;
 	}
-	if (keys)
-		std::cout << keys << std::endl;
+	//if (keys)
+	//	std::cout << keys << std::endl;
 }
 
 void handle_events(bool* shouldClose)
